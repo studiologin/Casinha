@@ -114,10 +114,12 @@ export default function ListaPage() {
     setIsDeleting(true);
     await removeItem(itemToDelete.id);
 
-    // Wait for 3 seconds before reloading
+    // No longer need to reload, the store handles it optimistically
+    // Just close the modal after a short delay for feedback
     setTimeout(() => {
-      window.location.reload();
-    }, 3000);
+      setItemToDelete(null);
+      setIsDeleting(false);
+    }, 1500);
   };
 
   return (
@@ -311,7 +313,7 @@ export default function ListaPage() {
                       className="h-full bg-[var(--accent-green)]"
                       initial={{ width: "100%" }}
                       animate={{ width: 0 }}
-                      transition={{ duration: 3, ease: "linear" }}
+                      transition={{ duration: 1.5, ease: "linear" }}
                     />
                   </div>
                 </>
@@ -516,10 +518,10 @@ function AddItemSheet({
     setIsSubmitting(false);
     setIsSuccess(true);
 
-    // Wait for 3 seconds before reloading
+    // Close the sheet after 1.5s instead of reloading after 3s
     setTimeout(() => {
-      window.location.reload();
-    }, 3000);
+      onClose();
+    }, 1500);
   };
 
   const fetchPrice = async (itemId: string) => {
