@@ -1,25 +1,26 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
-const googleApiKey = process.env.GOOGLE_GENERATION_API_KEY || "";
+const openaiKey = process.env.OPENAI_API_KEY || "";
 
-if (!googleApiKey) {
-  console.warn("⚠️ GOOGLE_GENERATION_API_KEY IS MISSING IN SERVER ENVIRONMENT");
+if (!openaiKey) {
+  console.warn("⚠️ OPENAI_API_KEY IS MISSING IN SERVER ENVIRONMENT");
 } else {
-  console.log("✅ Google API Key loaded (starts with):", googleApiKey.substring(0, 5) + "...");
+  console.log("✅ OpenAI Key loaded (starts with):", openaiKey.substring(0, 10) + "...");
 }
 
-const genAI = new GoogleGenerativeAI(googleApiKey);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const openai = new OpenAI({
+  apiKey: openaiKey,
+});
 
 export async function POST(req: Request) {
   try {
     const { messages, question_count } = await req.json();
 
-    if (!googleApiKey) {
+    if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({
         message:
-          "Por favor, configure a chave da API do Google Gemini (GOOGLE_GENERATION_API_KEY) para usar o Menu Especial.",
+          "Por favor, configure a chave da API da OpenAI para usar o Menu Especial.",
         is_final: false,
       });
     }
@@ -50,27 +51,24 @@ export async function POST(req: Request) {
          
          Faça APENAS UMA pergunta por vez. Seja criativo mas mantenha o foco no orçamento na segunda pergunta.`;
 
-    const lastMessage = messages.length > 0 ? messages[messages.length - 1].content : "Olá";
-    const history = messages.slice(0, -1).map((m: any) => ({
-      role: m.role === "user" ? "user" : "model",
-      parts: [{ text: m.content }]
-    }));
+    const openAiMessages = [
+      { role: "system", content: systemPrompt },
+      ...messages,
+    ];
 
-    const chat = model.startChat({
-      history: history,
-      generationConfig: {
-        maxOutputTokens: 1000,
-        temperature: 0.7,
-      }
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      max_tokens: 1000,
+      temperature: 0.7,
+      messages: openAiMessages as any,
+      response_format: isFinal ? { type: "json_object" } : { type: "text" },
     });
 
-    const result = await chat.sendMessage(systemPrompt + "\n\nUsuário disse: " + lastMessage);
-    const response = await result.response;
-    const text = response.text() || "";
+    const text = response.choices[0].message.content || "";
 
     if (isFinal) {
       try {
-        // Try to parse JSON from Gemini's response
+        // Try to parse JSON
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         const recipeJson = jsonMatch
           ? JSON.parse(jsonMatch[0])
@@ -98,8 +96,32 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Error in menu chat:", error);
 
+    // Check for specific OpenAI errors
+    if (error.status === 401) {
+      return NextResponse.json(
+        {
+          message: "Erro de autenticação: Verifique se sua chave da OpenAI está correta nas variáveis de ambiente.",
+          is_final: false,
+        },
+        { status: 500 },
+      );
+    }
+
+    if (error.status === 429) {
+      return NextResponse.json(
+        {
+          message: "Cota excedida: Você atingiu o limite da sua conta OpenAI. Verifique seus créditos.",
+          is_final: false,
+        },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json(
-      { message: "Ocorreu um erro ao processar sua solicitação no Gemini. Verifique a chave de API.", is_final: false },
+      {
+        message: "Ocorreu um erro no servidor OpenAI. Tente novamente ou verifique as chaves de API.",
+        is_final: false,
+      },
       { status: 500 },
     );
   }
