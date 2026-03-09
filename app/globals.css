@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #f5f0e8;
+  --color-bg-secondary: #ede8dc;
+  --color-bg-card: #fbf8f2;
+  --color-accent-primary: #e8763a;
+  --color-accent-secondary: #5b8fd4;
+  --color-accent-green: #6bbf7a;
+  --color-accent-purple: #a87dc4;
+  --color-accent-pet: #e8b84b;
+  --color-text-primary: #2c2416;
+  --color-text-secondary: #6b5b45;
+  --color-text-muted: #9e8e78;
+  --color-border: #ddd5c4;
+  --color-shadow: rgba(44, 36, 22, 0.1);
+}
+
+@layer base {
+  :root {
+    --bg-primary: #f5f0e8;
+    --bg-secondary: #ede8dc;
+    --bg-card: #fbf8f2;
+    --accent-primary: #e8763a;
+    --accent-secondary: #5b8fd4;
+    --accent-green: #6bbf7a;
+    --accent-purple: #a87dc4;
+    --accent-pet: #e8b84b;
+    --text-primary: #2c2416;
+    --text-secondary: #6b5b45;
+    --text-muted: #9e8e78;
+    --border: #ddd5c4;
+    --shadow: rgba(44, 36, 22, 0.1);
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans), sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer utilities {
+  .safe-pb {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+  .safe-pt {
+    padding-top: env(safe-area-inset-top, 16px);
+  }
+  .glass {
+    background: rgba(251, 248, 242, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(221, 213, 196, 0.5);
+  }
+}
+
+/* Character Animations */
+@keyframes idle-breathe {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.02) translateY(-1%);
+  }
+}
+
+@keyframes tail-wag {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(15deg);
+  }
+  75% {
+    transform: rotate(-15deg);
+  }
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(20deg);
+  }
+  75% {
+    transform: rotate(-20deg);
+  }
+}
+
+.animate-breathe {
+  animation: idle-breathe 3s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.animate-tail {
+  animation: tail-wag 0.5s ease-in-out infinite;
+  transform-origin: bottom right;
+}
+
+.animate-wave {
+  animation: wave 1s ease-in-out infinite;
+  transform-origin: bottom right;
+}
