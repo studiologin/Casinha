@@ -215,13 +215,18 @@ export default function ListaPage() {
 
       {/* Total - Fixed at bottom of current view */}
       {filteredItems.length > 0 && (
-        <div className="px-6 py-4 border-t border-[var(--border)] bg-[var(--bg-primary)] flex justify-between items-center shrink-0 z-10">
-          <span className="text-[var(--text-secondary)] font-medium">
-            Total Estimado
-          </span>
-          <span className="text-xl font-bold text-[var(--text-primary)]">
-            R$ {total.toFixed(2)}
-          </span>
+        <div className="px-6 py-4 border-t border-[var(--border)] bg-[var(--bg-primary)] flex flex-col gap-2 shrink-0 z-10">
+          <div className="flex justify-between items-center">
+            <span className="text-[var(--text-secondary)] font-medium">
+              Total Estimado
+            </span>
+            <span className="text-xl font-bold text-[var(--text-primary)]">
+              R$ {total.toFixed(2)}
+            </span>
+          </div>
+          <div className="flex justify-center">
+            <span className="text-[10px] text-[var(--text-muted)]">v1.0.1</span>
+          </div>
         </div>
       )}
 
@@ -398,7 +403,7 @@ function AddItemSheet({
     const parsedPrice = price ? parseFloat(price.replace(",", ".")) : undefined;
 
     if (itemToEdit) {
-      editItem(itemToEdit.id, {
+      await editItem(itemToEdit.id, {
         name,
         quantity,
         unit,
@@ -409,11 +414,11 @@ function AddItemSheet({
 
       // Re-fetch price if name changed and price is empty
       if (!price && name !== itemToEdit.name) {
-        fetchPrice(itemToEdit.id);
+        await fetchPrice(itemToEdit.id);
       }
     } else {
       const newItemId = crypto.randomUUID();
-      addItem({
+      await addItem({
         id: newItemId,
         name,
         quantity,
@@ -426,7 +431,7 @@ function AddItemSheet({
       });
 
       if (!price) {
-        fetchPrice(newItemId);
+        await fetchPrice(newItemId);
       }
     }
 

@@ -31,8 +31,15 @@ interface ShoppingState {
 export const useShoppingStore = create<ShoppingState>((set, get) => ({
   items: [],
   isLoading: false,
+  version: "1.0.1", // To verify deployment
 
   fetchItems: async () => {
+    if (supabase.auth.getSession === undefined || (supabase as any).supabaseUrl?.includes("placeholder")) {
+      console.error("❌ Supabase client is not configured correctly. Check your environment variables.");
+      set({ isLoading: false });
+      return;
+    }
+
     set({ isLoading: true });
     const { data, error } = await supabase
       .from("shopping_items")
@@ -63,13 +70,21 @@ export const useShoppingStore = create<ShoppingState>((set, get) => ({
     const { items } = get();
     const maxSortOrder = items.length > 0 ? Math.max(...items.map(i => (i as any).sort_order || 0)) : 0;
 
+    if ((supabase as any).supabaseUrl?.includes("placeholder")) {
+      console.error("❌ Cannot add item: Supabase is not configured.");
+      return;
+    }
+
     const { error } = await supabase.from("shopping_items").insert([{
       ...item,
       sort_order: maxSortOrder + 1,
       created_at: new Date().toISOString(),
     }]);
 
-    if (error) console.error("Error adding item:", error);
+    if (error) {
+      console.error("❌ Supabase Error adding item:", error);
+      throw error; // Let the caller handle it if needed
+    }
   },
 
   toggleItem: async (id, checked) => {

@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
+const openaiKey = process.env.OPENAI_API_KEY || "";
+
+if (!openaiKey) {
+  console.warn("⚠️ OPENAI_API_KEY IS MISSING IN SERVER ENVIRONMENT");
+} else {
+  console.log("✅ OpenAI Key loaded (starts with):", openaiKey.substring(0, 10) + "...");
+}
+
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "",
+  apiKey: openaiKey,
 });
 
 export async function POST(req: Request) {
