@@ -73,6 +73,8 @@ export default function ListaPage() {
   const [activeTab, setActiveTab] = useState<Category>("mercado");
   const [isAdding, setIsAdding] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<ShoppingItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { items, fetchItems, toggleItem, removeItem, reorderItems, isLoading: isStoreLoading } = useShoppingStore();
 
@@ -104,6 +106,18 @@ export default function ListaPage() {
     if (over && active.id !== over.id) {
       reorderItems(active.id as string, over.id as string);
     }
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    setIsDeleting(true);
+    await removeItem(itemToDelete.id);
+
+    // Wait for 3 seconds before reloading
+    setTimeout(() => {
+      window.location.reload();
+    }, 3000);
   };
 
   return (
@@ -196,7 +210,7 @@ export default function ListaPage() {
                         key={item.id}
                         item={item}
                         onToggle={() => toggleItem(item.id, item.checked)}
-                        onRemove={() => removeItem(item.id)}
+                        onRemove={() => setItemToDelete(item)}
                         onEdit={() => setEditingItem(item)}
                       />
                     ))}
@@ -242,6 +256,68 @@ export default function ListaPage() {
             defaultCategory={activeTab}
             itemToEdit={editingItem || undefined}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {itemToDelete && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[var(--bg-card)] max-w-sm w-full rounded-3xl p-6 shadow-2xl border border-[var(--border)] text-center"
+            >
+              {!isDeleting ? (
+                <>
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <Trash2 className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+                    Excluir item?
+                  </h2>
+                  <p className="text-[var(--text-secondary)] mb-6">
+                    Tem certeza que deseja remover "<strong>{itemToDelete.name}</strong>" da lista?
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setItemToDelete(null)}
+                      className="flex-1 py-3 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] font-medium"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={confirmDelete}
+                      className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 bg-[var(--accent-green)]/20 rounded-full flex items-center justify-center mx-auto mb-4 text-[var(--accent-green)]">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+                    Item excluído!
+                  </h2>
+                  <p className="text-[var(--text-secondary)] mb-4">
+                    Atualizando a lista em 3 segundos...
+                  </p>
+                  <div className="w-full h-1 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-[var(--accent-green)]"
+                      initial={{ width: "100%" }}
+                      animate={{ width: 0 }}
+                      transition={{ duration: 3, ease: "linear" }}
+                    />
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
