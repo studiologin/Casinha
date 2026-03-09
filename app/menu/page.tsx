@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Manoel } from "@/components/characters/Manoel";
 import { Nucha } from "@/components/characters/Nucha";
 import { useShoppingStore, Category } from "@/hooks/useShoppingList";
+import { useRecipesStore } from "@/hooks/useRecipes";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,7 @@ export default function MenuPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { addItem } = useShoppingStore();
+  const { saveRecipe } = useRecipesStore();
   const router = useRouter();
 
   const scrollToBottom = () => {
@@ -117,22 +119,45 @@ export default function MenuPage() {
   const acceptRecipe = async () => {
     if (!recipe) return;
 
-    // Add ingredients to shopping list
-    for (const ing of recipe.ingredients) {
-      await addItem({
-        id: crypto.randomUUID(),
-        name: ing.name,
-        quantity: ing.quantity,
-        unit: ing.unit,
-        category: "menu",
-        estimated_price: ing.estimated_price || 0,
-        price_is_estimated: true,
-        checked: false,
-        added_by: "Manoel",
+    try {
+      // 1. Save recipe to Supabase
+      await saveRecipe({
+        name: recipe.recipe_name,
+        description: recipe.description,
+        servings: recipe.servings,
+        prep_time: recipe.prep_time,
+        difficulty: recipe.difficulty,
+        ingredients: recipe.ingredients.map(ing => ({
+          item: ing.name,
+          quantity: `${ing.quantity} ${ing.unit}`
+        })),
+        steps: recipe.steps.map(s => ({
+          text: s.instruction
+        })),
+        image_prompt: "" // AI recipe doesn't provide this yet
       });
-    }
 
-    setShowRecipeSteps(true);
+      // 2. Add ingredients to shopping list
+      for (const ing of recipe.ingredients) {
+        await addItem({
+          id: crypto.randomUUID(),
+          name: ing.name,
+          quantity: ing.quantity,
+          unit: ing.unit,
+          category: "menu",
+          estimated_price: ing.estimated_price || 0,
+          price_is_estimated: true,
+          checked: false,
+          added_by: "Manoel",
+        });
+      }
+
+      setShowRecipeSteps(true);
+    } catch (error) {
+      console.error("Error accepting recipe:", error);
+      // Even if saving it fails, we can still show the steps
+      setShowRecipeSteps(true);
+    }
   };
 
   if (showRecipeSteps && recipe) {

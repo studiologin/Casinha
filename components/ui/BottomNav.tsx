@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, ShoppingCart, Utensils } from "lucide-react";
+import { Home, ShoppingCart, Utensils, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
@@ -13,6 +13,7 @@ export function BottomNav() {
     { name: "Home", href: "/", icon: Home },
     { name: "Lista", href: "/lista", icon: ShoppingCart },
     { name: "Menu", href: "/menu", icon: Utensils },
+    { name: "Receitas", href: "/receitas", icon: BookOpen },
   ];
 
   return (
