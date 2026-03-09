@@ -112,12 +112,12 @@ export default function MenuPage() {
     }
   };
 
-  const acceptRecipe = () => {
+  const acceptRecipe = async () => {
     if (!recipe) return;
 
     // Add ingredients to shopping list
-    recipe.ingredients.forEach((ing) => {
-      addItem({
+    for (const ing of recipe.ingredients) {
+      await addItem({
         id: crypto.randomUUID(),
         name: ing.name,
         quantity: ing.quantity,
@@ -128,7 +128,7 @@ export default function MenuPage() {
         checked: false,
         added_by: "Manoel",
       });
-    });
+    }
 
     setShowRecipeSteps(true);
   };

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { supabase } from "@/lib/supabase";
 
 export type Category = "mercado" | "farmacia" | "pets" | "menu";
 
@@ -18,73 +18,120 @@ export interface ShoppingItem {
 
 interface ShoppingState {
   items: ShoppingItem[];
-  addItem: (item: Omit<ShoppingItem, "created_at">) => string;
-  toggleItem: (id: string) => void;
-  removeItem: (id: string) => void;
-  updateItemPrice: (id: string, price: number, isEstimated: boolean) => void;
-  editItem: (id: string, updates: Partial<ShoppingItem>) => void;
-  reorderItems: (activeId: string, overId: string) => void;
+  isLoading: boolean;
+  fetchItems: () => Promise<void>;
+  addItem: (item: Omit<ShoppingItem, "created_at">) => Promise<void>;
+  toggleItem: (id: string, checked: boolean) => Promise<void>;
+  removeItem: (id: string) => Promise<void>;
+  updateItemPrice: (id: string, price: number, isEstimated: boolean) => Promise<void>;
+  editItem: (id: string, updates: Partial<ShoppingItem>) => Promise<void>;
+  reorderItems: (activeId: string, overId: string) => Promise<void>;
 }
 
-export const useShoppingStore = create<ShoppingState>()(
-  persist(
-    (set) => ({
-      items: [],
-      addItem: (item) => {
-        set((state) => ({
-          items: [
-            ...state.items,
-            {
-              ...item,
-              created_at: new Date().toISOString(),
-            },
-          ],
-        }));
-        return item.id;
-      },
-      toggleItem: (id) =>
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, checked: !item.checked } : item,
-          ),
-        })),
-      removeItem: (id) =>
-        set((state) => ({
-          items: state.items.filter((item) => item.id !== id),
-        })),
-      updateItemPrice: (id, price, isEstimated) =>
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id
-              ? {
-                ...item,
-                estimated_price: price,
-                price_is_estimated: isEstimated,
-              }
-              : item,
-          ),
-        })),
-      editItem: (id, updates) =>
-        set((state) => ({
-          items: state.items.map((item) =>
-            item.id === id ? { ...item, ...updates } : item,
-          ),
-        })),
-      reorderItems: (activeId, overId) =>
-        set((state) => {
-          const oldIndex = state.items.findIndex((i) => i.id === activeId);
-          const newIndex = state.items.findIndex((i) => i.id === overId);
-          if (oldIndex !== -1 && newIndex !== -1) {
-            const newItems = [...state.items];
-            const [movedItem] = newItems.splice(oldIndex, 1);
-            newItems.splice(newIndex, 0, movedItem);
-            return { items: newItems };
-          }
-          return state;
-        }),
-    }),
-    {
-      name: "casinha-shopping-storage",
-    },
-  ),
-);
+export const useShoppingStore = create<ShoppingState>((set, get) => ({
+  items: [],
+  isLoading: false,
+
+  fetchItems: async () => {
+    set({ isLoading: true });
+    const { data, error } = await supabase
+      .from("shopping_items")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (!error && data) {
+      set({ items: data as ShoppingItem[], isLoading: false });
+    } else {
+      set({ isLoading: false });
+    }
+
+    // Subscribe to changes
+    supabase
+      .channel("shopping_items_changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "shopping_items" },
+        () => {
+          get().fetchItems();
+        }
+      )
+      .subscribe();
+  },
+
+  addItem: async (item) => {
+    const { items } = get();
+    const maxSortOrder = items.length > 0 ? Math.max(...items.map(i => (i as any).sort_order || 0)) : 0;
+
+    const { error } = await supabase.from("shopping_items").insert([{
+      ...item,
+      sort_order: maxSortOrder + 1,
+      created_at: new Date().toISOString(),
+    }]);
+
+    if (error) console.error("Error adding item:", error);
+  },
+
+  toggleItem: async (id, checked) => {
+    const { error } = await supabase
+      .from("shopping_items")
+      .update({ checked: !checked })
+      .eq("id", id);
+
+    if (error) console.error("Error toggling item:", error);
+  },
+
+  removeItem: async (id) => {
+    const { error } = await supabase
+      .from("shopping_items")
+      .delete()
+      .eq("id", id);
+
+    if (error) console.error("Error removing item:", error);
+  },
+
+  updateItemPrice: async (id, price, isEstimated) => {
+    const { error } = await supabase
+      .from("shopping_items")
+      .update({
+        estimated_price: price,
+        price_is_estimated: isEstimated,
+      })
+      .eq("id", id);
+
+    if (error) console.error("Error updating price:", error);
+  },
+
+  editItem: async (id, updates) => {
+    const { error } = await supabase
+      .from("shopping_items")
+      .update(updates)
+      .eq("id", id);
+
+    if (error) console.error("Error editing item:", error);
+  },
+
+  reorderItems: async (activeId, overId) => {
+    const { items } = get();
+    const oldIndex = items.findIndex((i) => i.id === activeId);
+    const newIndex = items.findIndex((i) => i.id === overId);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newItems = [...items];
+      const [movedItem] = newItems.splice(oldIndex, 1);
+      newItems.splice(newIndex, 0, movedItem);
+
+      // Optimistic update
+      set({ items: newItems });
+
+      // Update all items' sort_order in Supabase
+      // In a real app, we might just update the affected ones, but for a small list this is fine
+      for (let i = 0; i < newItems.length; i++) {
+        await supabase
+          .from("shopping_items")
+          .update({ sort_order: i })
+          .eq("id", newItems[i].id);
+      }
+    }
+  },
+}));

@@ -8,10 +8,18 @@
   "theme_color": "#E8763A",
   "orientation": "portrait",
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
     {
-      "src": "/icons/icon-512-maskable.png",
+      "src": "https://lkdmvkbbpfwfrznaxxym.supabase.co/storage/v1/object/public/Imagens%20App/logo-casinha.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://lkdmvkbbpfwfrznaxxym.supabase.co/storage/v1/object/public/Imagens%20App/logo-casinha.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "https://lkdmvkbbpfwfrznaxxym.supabase.co/storage/v1/object/public/Imagens%20App/logo-casinha.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

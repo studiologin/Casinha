@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, ShoppingBag, Pill, Bone, Trash2, Loader2, GripVertical, ChevronLeft, Utensils } from "lucide-react";
 import Link from "next/link";
@@ -72,7 +72,11 @@ export default function ListaPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
 
-  const { items, toggleItem, removeItem, reorderItems } = useShoppingStore();
+  const { items, fetchItems, toggleItem, removeItem, reorderItems, isLoading: isStoreLoading } = useShoppingStore();
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const filteredItems = items.filter((i) => i.category === activeTab);
 
@@ -189,7 +193,7 @@ export default function ListaPage() {
                       <ItemCard
                         key={item.id}
                         item={item}
-                        onToggle={() => toggleItem(item.id)}
+                        onToggle={() => toggleItem(item.id, item.checked)}
                         onRemove={() => removeItem(item.id)}
                         onEdit={() => setEditingItem(item)}
                       />
@@ -200,6 +204,11 @@ export default function ListaPage() {
             )}
           </AnimatePresence>
         </div>
+        {isStoreLoading && items.length === 0 && (
+          <div className="flex justify-center py-10 text-[var(--text-muted)]">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        )}
       </div>
 
       {/* Total - Fixed at bottom of current view */}

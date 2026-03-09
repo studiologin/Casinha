@@ -85,10 +85,37 @@ export async function POST(req: Request) {
       message: text,
       is_final: false,
     });
-  } catch (error) {
-    console.error("Error in menu chat:", error);
+  } catch (error: any) {
+    console.error("Error in menu chat:", {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+      stack: error.stack,
+    });
+
+    // Check for specific OpenAI errors
+    if (error.status === 401) {
+      return NextResponse.json(
+        {
+          message: "Erro de autenticação: Verifique se sua chave da OpenAI está correta nas variáveis de ambiente.",
+          is_final: false
+        },
+        { status: 500 }
+      );
+    }
+
+    if (error.status === 429) {
+      return NextResponse.json(
+        {
+          message: "Cota excedida: Você atingiu o limite da sua conta OpenAI. Verifique seus créditos.",
+          is_final: false
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
-      { message: "Ocorreu um erro. Tente novamente.", is_final: false },
+      { message: "Ocorreu um erro no servidor. Tente novamente ou verifique as chaves de API.", is_final: false },
       { status: 500 },
     );
   }
