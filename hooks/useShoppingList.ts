@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type Category = "mercado" | "farmacia" | "pets";
+export type Category = "mercado" | "farmacia" | "pets" | "menu";
 
 export interface ShoppingItem {
   id: string;
@@ -22,6 +22,7 @@ interface ShoppingState {
   toggleItem: (id: string) => void;
   removeItem: (id: string) => void;
   updateItemPrice: (id: string, price: number, isEstimated: boolean) => void;
+  editItem: (id: string, updates: Partial<ShoppingItem>) => void;
   reorderItems: (activeId: string, overId: string) => void;
 }
 
@@ -56,11 +57,17 @@ export const useShoppingStore = create<ShoppingState>()(
           items: state.items.map((item) =>
             item.id === id
               ? {
-                  ...item,
-                  estimated_price: price,
-                  price_is_estimated: isEstimated,
-                }
+                ...item,
+                estimated_price: price,
+                price_is_estimated: isEstimated,
+              }
               : item,
+          ),
+        })),
+      editItem: (id, updates) =>
+        set((state) => ({
+          items: state.items.map((item) =>
+            item.id === id ? { ...item, ...updates } : item,
           ),
         })),
       reorderItems: (activeId, overId) =>

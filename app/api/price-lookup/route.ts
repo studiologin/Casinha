@@ -26,7 +26,7 @@ export async function POST(req: Request) {
         {
           role: "system",
           content:
-            "Você é um assistente que estima preços médios de produtos no Brasil. Responda APENAS com um número decimal (ex: 15.50) representando o valor em Reais (BRL). Não inclua R$, texto ou explicações.",
+            "Você é um assistente que estima preços médios de produtos no Brasil. Ao estimar preços de itens básicos ou de peso variado (como arroz, feijão, leite, carnes), considere SEMPRE o preço médio por 1kg ou 1L. Responda APENAS com um número decimal (ex: 15.50) representando o valor em Reais (BRL). Não inclua R$, texto ou explicações.",
         },
         {
           role: "user",

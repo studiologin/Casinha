@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const isFinal = question_count >= 4;
 
     const systemPrompt = isFinal
-      ? `Você é um assistente culinário. Baseado na conversa, sugira uma receita. 
+      ? `Você é um assistente culinário. Baseado na conversa, sugira uma receita ideal. 
          Retorne APENAS um JSON válido com a seguinte estrutura, sem markdown ou texto adicional:
          {
            "recipe_name": "Nome da Receita",
@@ -29,16 +29,19 @@ export async function POST(req: Request) {
            "prep_time": "30 min",
            "difficulty": "Fácil",
            "ingredients": [
-             { "name": "Produto", "quantity": "2", "unit": "unidades", "category": "mercado", "estimated_price": null }
+             { "name": "Produto", "quantity": "2", "unit": "unidades", "category": "menu", "estimated_price": null }
            ],
            "steps": [
              { "step": 1, "instruction": "Texto do passo", "duration": "5 min" }
            ],
            "image_prompt": "descrição para gerar imagem"
          }`
-      : `Você é um assistente culinário amigável (Manoel ou Nucha). Faça UMA pergunta curta e direta para ajudar a decidir o que cozinhar.
-         Exemplos de perguntas: "Preferem algo leve ou mais substancioso?", "Tem alguma restrição alimentar?", "Quanto tempo temos para cozinhar?".
-         Seja criativo e não repita perguntas.`;
+      : `Você é um assistente culinário amigável (Manoel ou Nucha). Você deve seguir RIGOROSAMENTE esta sequência de 5 perguntas:
+         1. Na primeira interação (count=0), pergunte obrigatoriamente: "O que gostaria de comer?"
+         2. Na segunda interação (count=1), pergunte obrigatoriamente: "Qual o valor pretende gastar?"
+         3. Da 3ª à 5ª interação, faça perguntas curtas e diretas sobre restrições, tempo disponível ou preferências de sabor para refinar a sugestão.
+         
+         Faça APENAS UMA pergunta por vez. Seja criativo mas mantenha o foco no orçamento na segunda pergunta.`;
 
     const openAiMessages = [
       { role: "system", content: systemPrompt },

@@ -80,17 +80,9 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <main className="p-6 max-w-md mx-auto min-h-screen safe-pt">
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-[var(--accent-primary)]">
-            Casinha
-          </h1>
-          <button className="p-2 rounded-full bg-[var(--bg-secondary)] text-[var(--text-secondary)]">
-            <Settings className="w-5 h-5" />
-          </button>
-        </header>
+      <div className="flex-1 overflow-y-auto w-full p-6 safe-pt">
 
-        <section className="relative h-48 mb-10 flex items-end justify-center">
+        <section className="relative h-48 mt-10 mb-10 flex items-end justify-center">
           <div className="absolute inset-0 bg-[var(--bg-secondary)] rounded-3xl -z-10 overflow-hidden">
             {/* Background decoration */}
             <div
@@ -114,12 +106,12 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-4">
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-12">
           <Link href="/lista">
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="bg-[var(--bg-card)] p-6 rounded-2xl shadow-[var(--shadow)] border border-[var(--border)] flex items-center gap-4"
+              className="bg-[var(--bg-card)] p-6 rounded-2xl shadow-[var(--shadow)] border border-[var(--border)] flex items-center gap-4 h-full"
             >
               <div className="w-12 h-12 rounded-full bg-[var(--accent-green)]/20 flex items-center justify-center text-[var(--accent-green)]">
                 <ShoppingCart className="w-6 h-6" />
@@ -139,7 +131,7 @@ export default function Home() {
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="bg-[var(--bg-card)] p-6 rounded-2xl shadow-[var(--shadow)] border border-[var(--border)] flex items-center gap-4"
+              className="bg-[var(--bg-card)] p-6 rounded-2xl shadow-[var(--shadow)] border border-[var(--border)] flex items-center gap-4 h-full"
             >
               <div className="w-12 h-12 rounded-full bg-[var(--accent-primary)]/20 flex items-center justify-center text-[var(--accent-primary)]">
                 <Utensils className="w-6 h-6" />
@@ -155,7 +147,7 @@ export default function Home() {
             </motion.div>
           </Link>
         </section>
-      </main>
+      </div>
     </>
   );
 }

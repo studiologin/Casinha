@@ -28,7 +28,18 @@ export const metadata: Metadata = {
     title: "Casinha",
   },
   icons: {
-    apple: "/icons/icon-192.png",
+    icon: "https://lkdmvkbbpfwfrznaxxym.supabase.co/storage/v1/object/public/Imagens%20App/logo-casinha.png",
+    shortcut: "https://lkdmvkbbpfwfrznaxxym.supabase.co/storage/v1/object/public/Imagens%20App/logo-casinha.png",
+    apple: "https://lkdmvkbbpfwfrznaxxym.supabase.co/storage/v1/object/public/Imagens%20App/logo-casinha.png",
+  },
+  openGraph: {
+    title: "Casinha",
+    description: "Gestão da nossa casinha 🏠",
+    images: ["https://lkdmvkbbpfwfrznaxxym.supabase.co/storage/v1/object/public/Imagens%20App/logo-casinha.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["https://lkdmvkbbpfwfrznaxxym.supabase.co/storage/v1/object/public/Imagens%20App/logo-casinha.png"],
   },
 };
 
@@ -40,10 +51,14 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${inter.variable}`}>
       <body
-        className="antialiased bg-[var(--bg-primary)] text-[var(--text-primary)] min-h-screen pb-24"
+        className="antialiased bg-[var(--bg-primary)] text-[var(--text-primary)] h-screen overflow-hidden flex flex-col"
         suppressHydrationWarning
       >
-        {children}
+        <main className="flex-1 overflow-hidden flex flex-col items-center">
+          <div className="w-full max-w-2xl flex-1 flex flex-col overflow-hidden relative">
+            {children}
+          </div>
+        </main>
         <BottomNav />
       </body>
     </html>

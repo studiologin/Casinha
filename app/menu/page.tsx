@@ -122,9 +122,9 @@ export default function MenuPage() {
         name: ing.name,
         quantity: ing.quantity,
         unit: ing.unit,
-        category: ing.category || "mercado",
-        estimated_price: ing.estimated_price || undefined,
-        price_is_estimated: false,
+        category: "menu",
+        estimated_price: ing.estimated_price || 0,
+        price_is_estimated: true,
         checked: false,
         added_by: "Manoel",
       });
@@ -138,8 +138,8 @@ export default function MenuPage() {
   }
 
   return (
-    <main className="min-h-screen safe-pt relative pb-24 flex flex-col">
-      <header className="px-6 py-4 flex justify-between items-center sticky top-0 z-40 glass">
+    <div className="flex-1 flex flex-col overflow-hidden relative pb-16">
+      <header className="px-6 py-4 flex justify-between items-center z-40 glass shrink-0">
         <Link href="/" className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">
             Menu Especial
@@ -148,7 +148,7 @@ export default function MenuPage() {
       </header>
 
       {!started ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
           <div className="flex justify-center items-end gap-2 mb-8">
             <Manoel className="w-24 h-24" state="happy" />
             <Nucha className="w-24 h-24" state="happy" />
@@ -167,7 +167,7 @@ export default function MenuPage() {
           </button>
         </div>
       ) : recipe ? (
-        <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex-1 p-6 overflow-y-auto w-full">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -177,21 +177,21 @@ export default function MenuPage() {
               <ChefHat className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-bold text-center text-[var(--text-primary)] mb-2">
-              {recipe.recipe_name}
+              {recipe!.recipe_name}
             </h2>
             <p className="text-center text-[var(--text-secondary)] mb-6">
-              {recipe.description}
+              {recipe!.description}
             </p>
 
-            <div className="flex justify-center gap-4 mb-6 text-sm font-medium text-[var(--text-muted)]">
-              <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full">
-                {recipe.prep_time}
+            <div className="flex flex-wrap justify-center gap-2 mb-6 text-xs sm:text-sm font-medium text-[var(--text-muted)]">
+              <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full text-center whitespace-nowrap">
+                {recipe!.prep_time}
               </span>
-              <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full">
-                {recipe.difficulty}
+              <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full text-center whitespace-nowrap">
+                {recipe!.difficulty}
               </span>
-              <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full">
-                {recipe.servings} porções
+              <span className="bg-[var(--bg-secondary)] px-3 py-1 rounded-full text-center whitespace-nowrap">
+                {recipe!.servings} porções
               </span>
             </div>
 
@@ -200,7 +200,7 @@ export default function MenuPage() {
                 Ingredientes
               </h3>
               <ul className="space-y-2">
-                {recipe.ingredients.map((ing, i) => (
+                {recipe!.ingredients.map((ing, i) => (
                   <li
                     key={i}
                     className="flex justify-between text-[var(--text-secondary)] text-sm"
@@ -214,7 +214,7 @@ export default function MenuPage() {
               </ul>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={() => {
                   setRecipe(null);
@@ -236,9 +236,9 @@ export default function MenuPage() {
           </motion.div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {/* Progress */}
-          <div className="px-6 py-2">
+          <div className="px-6 py-2 shrink-0">
             <div className="h-2 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
               <motion.div
                 className="h-full bg-[var(--accent-primary)]"
@@ -309,7 +309,7 @@ export default function MenuPage() {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-4 bg-[var(--bg-primary)] border-t border-[var(--border)]">
+          <div className="p-4 bg-[var(--bg-primary)] border-t border-[var(--border)] shrink-0 relative z-10">
             <form onSubmit={sendMessage} className="flex gap-2">
               <input
                 type="text"
@@ -330,7 +330,7 @@ export default function MenuPage() {
           </div>
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
@@ -353,8 +353,8 @@ function RecipeStepsView({
   };
 
   return (
-    <main className="min-h-screen safe-pt bg-[var(--bg-primary)] pb-32">
-      <header className="px-6 py-4 sticky top-0 z-40 glass border-b border-[var(--border)]">
+    <div className="flex-1 flex flex-col overflow-hidden relative pb-16">
+      <header className="px-6 py-4 z-40 glass border-b border-[var(--border)] shrink-0">
         <h1 className="text-xl font-bold text-[var(--text-primary)] truncate">
           {recipe.recipe_name}
         </h1>
@@ -369,7 +369,7 @@ function RecipeStepsView({
         </div>
       </header>
 
-      <div className="p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-24">
         {recipe.steps.map((step, index) => {
           const isCompleted = completedSteps.includes(index);
           return (
@@ -422,7 +422,7 @@ function RecipeStepsView({
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-24 left-6 right-6 bg-[var(--accent-green)] text-white p-6 rounded-3xl shadow-2xl text-center z-50"
+          className="absolute bottom-20 left-6 right-6 bg-[var(--accent-green)] text-white p-6 rounded-3xl shadow-2xl text-center z-50"
         >
           <div className="flex justify-center gap-2 mb-4">
             <Manoel state="happy" className="w-16 h-16" />
@@ -437,6 +437,6 @@ function RecipeStepsView({
           </button>
         </motion.div>
       )}
-    </main>
+    </div>
   );
 }
