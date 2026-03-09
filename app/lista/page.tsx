@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, ShoppingBag, Pill, Bone, Trash2, Loader2, GripVertical, ChevronLeft, Utensils } from "lucide-react";
+import { Plus, ShoppingBag, Pill, Bone, Trash2, Loader2, GripVertical, ChevronLeft, Utensils, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import {
   DndContext,
@@ -239,7 +239,7 @@ export default function ListaPage() {
             </span>
           </div>
           <div className="flex justify-center">
-            <span className="text-[10px] text-[var(--text-muted)]">v1.0.1</span>
+            <span className="text-[10px] text-[var(--text-muted)]">v1.0.2</span>
           </div>
         </div>
       )}
@@ -467,6 +467,7 @@ function AddItemSheet({
     itemToEdit?.added_by || "Manoel",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const { addItem, updateItemPrice, editItem } = useShoppingStore();
 
@@ -477,6 +478,7 @@ function AddItemSheet({
     setIsSubmitting(true);
 
     const parsedPrice = price ? parseFloat(price.replace(",", ".")) : undefined;
+    const finalPrice = parsedPrice !== undefined ? parsedPrice * parseFloat(quantity || "1") : undefined;
 
     if (itemToEdit) {
       await editItem(itemToEdit.id, {
@@ -484,7 +486,7 @@ function AddItemSheet({
         quantity,
         unit,
         category,
-        estimated_price: parsedPrice,
+        estimated_price: finalPrice,
         price_is_estimated: false,
       });
 
@@ -500,7 +502,7 @@ function AddItemSheet({
         quantity,
         unit,
         category,
-        estimated_price: parsedPrice,
+        estimated_price: finalPrice,
         price_is_estimated: false,
         checked: false,
         added_by: addedBy,
@@ -511,7 +513,13 @@ function AddItemSheet({
       }
     }
 
-    onClose();
+    setIsSubmitting(false);
+    setIsSuccess(true);
+
+    // Wait for 3 seconds before reloading
+    setTimeout(() => {
+      window.location.reload();
+    }, 3000);
   };
 
   const fetchPrice = async (itemId: string) => {
@@ -653,7 +661,41 @@ function AddItemSheet({
             )}
           </button>
         </form>
+
+        <AnimatePresence>
+          {isSuccess && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="absolute inset-0 z-[110] bg-[var(--bg-card)] rounded-3xl p-6 flex flex-col items-center justify-center text-center"
+            >
+              <div className="w-20 h-20 bg-[var(--accent-green)]/20 rounded-full flex items-center justify-center mb-6 text-[var(--accent-green)]">
+                <CheckCircle2 className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
+                Sucesso! 🎉
+              </h2>
+              <p className="text-[var(--text-secondary)] mb-6">
+                Item {itemToEdit ? "atualizado" : "adicionado"} com sucesso!
+                <br />
+                Multiplicamos o valor pela quantidade.
+              </p>
+              <div className="w-full max-w-[200px] space-y-2">
+                <p className="text-xs text-[var(--text-muted)]">Atualizando a lista...</p>
+                <div className="w-full h-1.5 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-[var(--accent-green)]"
+                    initial={{ width: "100%" }}
+                    animate={{ width: 0 }}
+                    transition={{ duration: 3, ease: "linear" }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
-    </div>
+    </div >
   );
 }
