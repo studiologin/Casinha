@@ -1,6 +1,6 @@
 # 🏠 Casinha
 
-Um sistema de gestão doméstica para um casal (Manoel e Nucha) e seus três cachorros (Johnny, Jack e Jimmy).
+Um sistema de gestão doméstica para um casal (Manoel e Nucha) e seus três cachorros (Johnny, Jack e Jimmy) poder ter maior controle dos gastos.
 
 ## Tecnologias
 
