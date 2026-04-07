@@ -1,14 +1,14 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
 
-export type Category = "mercado" | "farmacia" | "pets" | "menu";
+export type Category = "mercado" | "farmacia" | "pets" | "menu" | "historico";
 
 export interface ShoppingItem {
   id: string;
   name: string;
   quantity: string;
   unit: string;
-  category: Category;
+  category: Exclude<Category, "historico">;
   estimated_price?: number;
   price_is_estimated: boolean;
   checked: boolean;
@@ -16,8 +16,26 @@ export interface ShoppingItem {
   created_at: string;
 }
 
+export interface SavedList {
+  id: string;
+  name: string;
+  category: Exclude<Category, "historico">;
+  created_at: string;
+}
+
+export interface SavedListItem {
+  id: string;
+  list_id: string;
+  name: string;
+  quantity: string;
+  unit: string;
+  price?: number;
+  created_at: string;
+}
+
 interface ShoppingState {
   items: ShoppingItem[];
+  savedLists: SavedList[];
   isLoading: boolean;
   fetchItems: () => Promise<void>;
   addItem: (item: Omit<ShoppingItem, "created_at">) => Promise<void>;
@@ -26,12 +44,19 @@ interface ShoppingState {
   updateItemPrice: (id: string, price: number, isEstimated: boolean) => Promise<void>;
   editItem: (id: string, updates: Partial<ShoppingItem>) => Promise<void>;
   reorderItems: (activeId: string, overId: string) => Promise<void>;
+  // History functions
+  saveCurrentList: (name: string, category: Exclude<Category, "historico">) => Promise<void>;
+  fetchSavedLists: () => Promise<void>;
+  fetchSavedListItems: (listId: string) => Promise<SavedListItem[]>;
+  reuseItem: (item: Partial<SavedListItem>, category: Exclude<Category, "historico">) => Promise<void>;
+  deleteSavedList: (listId: string) => Promise<void>;
 }
 
 export const useShoppingStore = create<ShoppingState>((set, get) => ({
   items: [],
+  savedLists: [],
   isLoading: false,
-  version: "1.0.1", // To verify deployment
+  version: "1.0.3", // Added history
 
   fetchItems: async () => {
     if (supabase.auth.getSession === undefined || (supabase as any).supabaseUrl?.includes("placeholder")) {
@@ -206,6 +231,119 @@ export const useShoppingStore = create<ShoppingState>((set, get) => ({
           .update({ sort_order: i })
           .eq("id", newItems[i].id);
       }
+    }
+  },
+
+  saveCurrentList: async (name, category) => {
+    const { items } = get();
+    const categoryItems = items.filter(i => i.category === category);
+    
+    if (categoryItems.length === 0) return;
+    
+    set({ isLoading: true });
+    
+    try {
+      // 1. Create the saved list entry
+      const { data: listData, error: listError } = await supabase
+        .from("saved_lists")
+        .insert([{ name, category }])
+        .select()
+        .single();
+        
+      if (listError) throw listError;
+      
+      // 2. Insert items into saved_list_items
+      const itemsToSave = categoryItems.map(item => ({
+        list_id: listData.id,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        price: item.estimated_price
+      }));
+      
+      const { error: itemsError } = await supabase
+        .from("saved_list_items")
+        .insert(itemsToSave);
+        
+      if (itemsError) throw itemsError;
+      
+      // 3. Remove from active list
+      const idsToRemove = categoryItems.map(i => i.id);
+      const { error: removeError } = await supabase
+        .from("shopping_items")
+        .delete()
+        .in("id", idsToRemove);
+        
+      if (removeError) throw removeError;
+      
+      // 4. Update state
+      set({ 
+        items: items.filter(i => !idsToRemove.includes(i.id)),
+        isLoading: false 
+      });
+      
+      // Refresh saved lists
+      get().fetchSavedLists();
+      
+    } catch (error) {
+      console.error("Error saving list:", error);
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+  
+  fetchSavedLists: async () => {
+    const { data, error } = await supabase
+      .from("saved_lists")
+      .select("*")
+      .order("created_at", { ascending: false });
+      
+    if (!error && data) {
+      set({ savedLists: data as SavedList[] });
+    }
+  },
+  
+  fetchSavedListItems: async (listId) => {
+    const { data, error } = await supabase
+      .from("saved_list_items")
+      .select("*")
+      .eq("list_id", listId)
+      .order("created_at", { ascending: true });
+      
+    if (error) {
+      console.error("Error fetching list items:", error);
+      return [];
+    }
+    
+    return data as SavedListItem[];
+  },
+  
+  reuseItem: async (item, category) => {
+    const newItem: Omit<ShoppingItem, "created_at"> = {
+      id: crypto.randomUUID(),
+      name: item.name!,
+      quantity: item.quantity || "1",
+      unit: item.unit || "un",
+      category: category,
+      estimated_price: item.price,
+      price_is_estimated: false,
+      checked: false,
+      added_by: "Manoel" as const, // Default
+    };
+    
+    await get().addItem(newItem);
+  },
+  
+  deleteSavedList: async (listId) => {
+    const { error } = await supabase
+      .from("saved_lists")
+      .delete()
+      .eq("id", listId);
+      
+    if (!error) {
+      set({ savedLists: get().savedLists.filter(l => l.id !== listId) });
+    } else {
+      console.error("Error deleting list:", error);
     }
   },
 }));

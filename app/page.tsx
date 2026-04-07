@@ -7,7 +7,7 @@ import { Nucha } from "@/components/characters/Nucha";
 import { Johnny } from "@/components/characters/Johnny";
 import { Jack } from "@/components/characters/Jack";
 import { Jimmy } from "@/components/characters/Jimmy";
-import { Settings, ShoppingCart, Utensils } from "lucide-react";
+import { Settings, ShoppingCart, Utensils, History, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
@@ -142,6 +142,46 @@ export default function Home() {
                 </h2>
                 <p className="text-[var(--text-muted)] text-sm">
                   O que vamos comer hoje?
+                </p>
+              </div>
+            </motion.div>
+          </Link>
+
+          <Link href="/lista?tab=historico">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-[var(--bg-card)] p-6 rounded-2xl shadow-[var(--shadow)] border border-[var(--border)] flex items-center gap-4 h-full"
+            >
+              <div className="w-12 h-12 rounded-full bg-[var(--accent-secondary)]/20 flex items-center justify-center text-[var(--accent-secondary)]">
+                <History className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h2 className="font-semibold text-[var(--text-primary)] text-lg">
+                  Histórico
+                </h2>
+                <p className="text-[var(--text-muted)] text-sm">
+                  Veja suas listas anteriores
+                </p>
+              </div>
+            </motion.div>
+          </Link>
+
+          <Link href="/receitas">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="bg-[var(--bg-card)] p-6 rounded-2xl shadow-[var(--shadow)] border border-[var(--border)] flex items-center gap-4 h-full"
+            >
+              <div className="w-12 h-12 rounded-full bg-[var(--accent-purple)]/20 flex items-center justify-center text-[var(--accent-purple)]">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h2 className="font-semibold text-[var(--text-primary)] text-lg">
+                  Receitas
+                </h2>
+                <p className="text-[var(--text-muted)] text-sm">
+                  Seu livro de receitas
                 </p>
               </div>
             </motion.div>

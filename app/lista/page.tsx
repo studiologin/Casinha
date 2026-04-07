@@ -2,10 +2,11 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, ShoppingBag, Pill, Bone, Trash2, Loader2, GripVertical, ChevronLeft, Utensils, CheckCircle2 } from "lucide-react";
+import { Plus, ShoppingBag, Pill, Bone, Trash2, Loader2, GripVertical, ChevronLeft, Utensils, CheckCircle2, History, Save, Archive, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -67,25 +68,47 @@ const CATEGORIES: {
       color: "text-[var(--accent-primary)]",
       bg: "bg-[var(--accent-primary)]",
     },
+    {
+      id: "historico",
+      label: "Histórico",
+      icon: History,
+      color: "text-[var(--accent-blue)]",
+      bg: "bg-[var(--accent-blue)]",
+    },
   ];
 
-export default function ListaPage() {
+function ListaContent() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") as Category;
+  
   const [activeTab, setActiveTab] = useState<Category>("mercado");
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<ShoppingItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isStoreLoading, setIsStoreLoading] = useState(false);
 
-  const { items, fetchItems, toggleItem, removeItem, reorderItems, isLoading: isStoreLoading } = useShoppingStore();
+  const { items, savedLists, fetchItems, fetchSavedLists, toggleItem, removeItem, reorderItems, saveCurrentList, reuseItem, deleteSavedList, fetchSavedListItems } = useShoppingStore();
 
   useEffect(() => {
     fetchItems();
-  }, [fetchItems]);
+    fetchSavedLists();
+  }, [fetchItems, fetchSavedLists]);
+
+  useEffect(() => {
+    if (tabParam && CATEGORIES.some(c => c.id === tabParam)) {
+      setActiveTab(tabParam);
+    } else if (!tabParam) {
+      // Se não houver parâmetro (clique no ícone Lista), volta para Mercado
+      setActiveTab("mercado");
+    }
+  }, [tabParam]);
 
   const filteredItems = items.filter((i) => i.category === activeTab);
 
   const total = filteredItems.reduce(
-    (acc, item) => acc + (item.estimated_price || 0),
+    (acc, item) => acc + (item.estimated_price || 0) * (parseFloat(item.quantity) || 1),
     0,
   );
 
@@ -114,12 +137,11 @@ export default function ListaPage() {
     setIsDeleting(true);
     await removeItem(itemToDelete.id);
 
-    // No longer need to reload, the store handles it optimistically
-    // Just close the modal after a short delay for feedback
+    // Sucesso rápido: 0.8s
     setTimeout(() => {
       setItemToDelete(null);
       setIsDeleting(false);
-    }, 1500);
+    }, 800);
   };
 
   return (
@@ -143,7 +165,7 @@ export default function ListaPage() {
         {/* Tabs - Improved Responsiveness */}
         <div className="flex px-4 gap-2 mb-4 mt-4 overflow-x-auto no-scrollbar shrink-0 scroll-smooth">
           <div className="flex gap-2 pb-1 sm:justify-center w-full">
-            {CATEGORIES.map((cat) => {
+            {CATEGORIES.filter(c => c.id !== "historico").map((cat) => {
               const isActive = activeTab === cat.id;
               return (
                 <button
@@ -174,7 +196,17 @@ export default function ListaPage() {
         {/* List */}
         <div className="px-4">
           <AnimatePresence mode="popLayout">
-            {filteredItems.length === 0 ? (
+            {activeTab === "historico" ? (
+              <HistoryView 
+                lists={savedLists} 
+                onDelete={deleteSavedList} 
+                fetchItems={fetchSavedListItems}
+                onReuse={(item) => {
+                  reuseItem(item, "mercado"); // Default to mercado for now, can be improved
+                  setActiveTab("mercado");
+                }}
+              />
+            ) : filteredItems.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -230,8 +262,8 @@ export default function ListaPage() {
       </div>
 
       {/* Total - Fixed at bottom of current view */}
-      {filteredItems.length > 0 && (
-        <div className="px-6 py-4 border-t border-[var(--border)] bg-[var(--bg-primary)] flex flex-col gap-2 shrink-0 z-10">
+      {activeTab !== "historico" && filteredItems.length > 0 && (
+        <div className="px-6 py-4 border-t border-[var(--border)] bg-[var(--bg-primary)] flex flex-col gap-4 shrink-0 z-10">
           <div className="flex justify-between items-center">
             <span className="text-[var(--text-secondary)] font-medium">
               Total Estimado
@@ -240,8 +272,17 @@ export default function ListaPage() {
               R$ {total.toFixed(2)}
             </span>
           </div>
+
+          <button
+            onClick={() => setIsSaving(true)}
+            className="w-full h-12 rounded-2xl bg-[var(--bg-card)] border-2 border-[var(--accent-primary)] text-[var(--accent-primary)] font-bold flex items-center justify-center gap-2 hover:bg-[var(--accent-primary)] hover:text-white transition-all shadow-sm"
+          >
+            <Archive className="w-5 h-5" />
+            Salvar e Limpar Lista
+          </button>
+
           <div className="flex justify-center">
-            <span className="text-[10px] text-[var(--text-muted)]">v1.0.2</span>
+            <span className="text-[10px] text-[var(--text-muted)]">v1.0.3</span>
           </div>
         </div>
       )}
@@ -255,8 +296,22 @@ export default function ListaPage() {
               setIsAdding(false);
               setEditingItem(null);
             }}
-            defaultCategory={activeTab}
+            defaultCategory={activeTab === "historico" ? "mercado" : activeTab}
             itemToEdit={editingItem || undefined}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Save List Modal */}
+      <AnimatePresence>
+        {isSaving && (
+          <SaveListModal
+            category={activeTab === "historico" ? "mercado" : activeTab}
+            onClose={() => setIsSaving(false)}
+            onSaved={() => {
+              setIsSaving(false);
+              // Store already clears the items and fetches history
+            }}
           />
         )}
       </AnimatePresence>
@@ -313,7 +368,7 @@ export default function ListaPage() {
                       className="h-full bg-[var(--accent-green)]"
                       initial={{ width: "100%" }}
                       animate={{ width: 0 }}
-                      transition={{ duration: 1.5, ease: "linear" }}
+                      transition={{ duration: 0.8, ease: "linear" }}
                     />
                   </div>
                 </>
@@ -427,7 +482,7 @@ function ItemCard({
           <Loader2 className="w-4 h-4 animate-spin text-[var(--text-muted)] mx-auto" />
         ) : (
           <p className="font-semibold text-[var(--text-primary)]">
-            R$ {item.estimated_price.toFixed(2)}
+            R$ {(item.estimated_price * (parseFloat(item.quantity) || 1)).toFixed(2)}
           </p>
         )}
         {item.price_is_estimated && (
@@ -459,8 +514,8 @@ function AddItemSheet({
   const [name, setName] = useState(itemToEdit?.name || "");
   const [quantity, setQuantity] = useState(itemToEdit?.quantity || "1");
   const [unit, setUnit] = useState(itemToEdit?.unit || "un");
-  const [category, setCategory] = useState<Category>(
-    itemToEdit?.category || defaultCategory,
+  const [category, setCategory] = useState<Exclude<Category, "historico">>(
+    itemToEdit?.category || (defaultCategory === "historico" ? "mercado" : defaultCategory as Exclude<Category, "historico">),
   );
   const [price, setPrice] = useState(
     itemToEdit?.estimated_price?.toString() || "",
@@ -480,7 +535,7 @@ function AddItemSheet({
     setIsSubmitting(true);
 
     const parsedPrice = price ? parseFloat(price.replace(",", ".")) : undefined;
-    const finalPrice = parsedPrice !== undefined ? parsedPrice * parseFloat(quantity || "1") : undefined;
+    const finalPrice = parsedPrice; // Salvamos o preço UNITÁRIO agora!
 
     if (itemToEdit) {
       await editItem(itemToEdit.id, {
@@ -518,10 +573,10 @@ function AddItemSheet({
     setIsSubmitting(false);
     setIsSuccess(true);
 
-    // Close the sheet after 1.5s instead of reloading after 3s
+    // Fecha em 0.8s para ser bem ágil
     setTimeout(() => {
       onClose();
-    }, 1500);
+    }, 800);
   };
 
   const fetchPrice = async (itemId: string) => {
@@ -617,11 +672,11 @@ function AddItemSheet({
               Categoria
             </label>
             <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
+              {CATEGORIES.filter(c => c.id !== "historico").map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => setCategory(cat.id)}
+                  onClick={() => setCategory(cat.id as Exclude<Category, "historico">)}
                   className={cn(
                     "flex-1 min-w-[100px] py-3 rounded-xl border text-sm font-medium transition-colors",
                     category === cat.id
@@ -690,7 +745,7 @@ function AddItemSheet({
                     className="h-full bg-[var(--accent-green)]"
                     initial={{ width: "100%" }}
                     animate={{ width: 0 }}
-                    transition={{ duration: 3, ease: "linear" }}
+                    transition={{ duration: 0.8, ease: "linear" }}
                   />
                 </div>
               </div>
@@ -699,5 +754,234 @@ function AddItemSheet({
         </AnimatePresence>
       </motion.div>
     </div >
+  );
+}
+
+function SaveListModal({
+  category,
+  onClose,
+  onSaved,
+}: {
+  category: any;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { saveCurrentList } = useShoppingStore();
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      await saveCurrentList(name, category);
+      onSaved();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-[var(--bg-card)] max-w-sm w-full rounded-3xl p-6 shadow-2xl border border-[var(--border)]"
+      >
+        <div className="w-16 h-16 bg-[var(--accent-primary)]/10 rounded-full flex items-center justify-center mx-auto mb-4 text-[var(--accent-primary)]">
+          <Archive className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-[var(--text-primary)] text-center mb-2">
+          Salvar Lista de Compras
+        </h2>
+        <p className="text-[var(--text-secondary)] text-center mb-6 text-sm">
+          A lista atual será movida para o histórico e limpa da tela.
+        </p>
+
+        <form onSubmit={handleSave} className="space-y-4">
+          <input
+            autoFocus
+            type="text"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
+            placeholder="Ex: Rancho do Mês, Churrasco..."
+          />
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] font-medium"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 py-3 rounded-xl bg-[var(--accent-primary)] text-white font-bold flex justify-center items-center"
+            >
+              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Salvar"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
+function HistoryView({
+  lists,
+  onDelete,
+  onReuse,
+  fetchItems
+}: {
+  lists: any[];
+  onDelete: (id: string) => void;
+  onReuse: (item: any) => void;
+  fetchItems: (id: string) => Promise<any[]>;
+}) {
+  return (
+    <div className="space-y-4 py-2">
+      {lists.length === 0 ? (
+        <div className="py-20 text-center text-[var(--text-muted)]">
+          <History className="w-16 h-16 mx-auto mb-4 opacity-20" />
+          <p>Nenhuma lista salva ainda.</p>
+        </div>
+      ) : (
+        lists.map((list) => (
+          <HistoryCard 
+            key={list.id} 
+            list={list} 
+            onDelete={() => onDelete(list.id)} 
+            onReuse={onReuse}
+            fetchItems={() => fetchItems(list.id)}
+          />
+        ))
+      )}
+    </div>
+  );
+}
+
+function HistoryCard({ 
+  list, 
+  onDelete, 
+  onReuse,
+  fetchItems 
+}: { 
+  list: any; 
+  onDelete: () => void;
+  onReuse: (item: any) => void;
+  fetchItems: () => Promise<any[]>;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [items, setItems] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const toggleExpand = async () => {
+    const nextState = !isExpanded;
+    setIsExpanded(nextState);
+    if (nextState && items.length === 0) {
+      setIsLoading(true);
+      const data = await fetchItems();
+      setItems(data);
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] shadow-sm overflow-hidden">
+      <div 
+        className="p-4 flex items-center justify-between cursor-pointer hover:bg-[var(--bg-secondary)]/30 transition-colors"
+        onClick={toggleExpand}
+      >
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center text-white",
+            list.category === "mercado" ? "bg-[var(--accent-green)]" :
+            list.category === "farmacia" ? "bg-[var(--accent-purple)]" :
+            list.category === "pets" ? "bg-[var(--accent-pet)]" : "bg-[var(--accent-primary)]"
+          )}>
+            <ShoppingBag className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-[var(--text-primary)]">{list.name}</h3>
+            <p className="text-xs text-[var(--text-muted)]">
+              {new Date(list.created_at).toLocaleDateString('pt-BR')} • {list.category.charAt(0).toUpperCase() + list.category.slice(1)}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="p-2 text-red-500/50 hover:text-red-500 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+          {isExpanded ? <ChevronUp className="w-5 h-5 text-[var(--text-muted)]" /> : <ChevronDown className="w-5 h-5 text-[var(--text-muted)]" />}
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t border-[var(--border)] bg-[var(--bg-primary)]/30"
+          >
+            {isLoading ? (
+              <div className="p-8 flex justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-[var(--accent-primary)]" />
+              </div>
+            ) : (
+              <ul className="p-2 space-y-1">
+                {items.length === 0 ? (
+                  <li className="p-4 text-center text-xs text-[var(--text-muted)] italic">Nenhum item nesta lista.</li>
+                ) : (
+                  items.map((item) => (
+                    <li key={item.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-[var(--bg-card)] transition-colors group">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">{item.name}</p>
+                        <p className="text-[10px] text-[var(--text-muted)]">
+                          {item.quantity} {item.unit} • R$ {((item.price || 0) * (parseFloat(item.quantity) || 1)).toFixed(2)}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => onReuse(item)}
+                        className="bg-[var(--accent-primary)] text-white p-2 rounded-lg scale-0 group-hover:scale-100 transition-transform active:scale-90"
+                        title="Reutilizar item"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export default function ListaPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 flex flex-col items-center justify-center bg-[var(--bg-primary)]">
+        <Loader2 className="w-10 h-10 animate-spin text-[var(--accent-primary)]" />
+      </div>
+    }>
+      <ListaContent />
+    </Suspense>
   );
 }

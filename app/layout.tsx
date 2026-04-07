@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { BottomNav } from "@/components/ui/BottomNav";
 
@@ -59,7 +60,9 @@ export default function RootLayout({
             {children}
           </div>
         </main>
-        <BottomNav />
+        <Suspense fallback={null}>
+          <BottomNav />
+        </Suspense>
       </body>
     </html>
   );
