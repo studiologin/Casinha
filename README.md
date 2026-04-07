@@ -22,3 +22,4 @@ Um sistema de gestão doméstica para um casal (Manoel e Nucha) e seus três cac
 - **Dashboard (Home)**: Visão geral com mascotes animados.
 - **Lista de Compras**: Organizada por Mercado, Farmácia e Pets. Estimativa de preços via IA.
 - **Menu Especial**: Chatbot para sugerir receitas e adicionar ingredientes à lista de compras.
+ 
