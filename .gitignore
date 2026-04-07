@@ -5,3 +5,11 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Agent specific files
+.agent/
+.antigravity/
+metadata.json
+implementation_plan.md
+task.md
+walkthrough.md
