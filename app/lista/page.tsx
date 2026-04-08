@@ -2,9 +2,9 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, Suspense, useMemo } from "react";
+import { useState, useEffect, Suspense, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, ShoppingBag, Pill, Bone, Trash2, Loader2, GripVertical, ChevronLeft, Utensils, CheckCircle2, History, Save, Archive, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Plus, ShoppingBag, Pill, Bone, Trash2, Loader2, GripVertical, ChevronLeft, Utensils, CheckCircle2, History, Save, Archive, ChevronDown, ChevronUp, RefreshCw, Camera } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -600,7 +600,10 @@ function AddItemSheet({
     itemToEdit?.added_by || "Manoel",
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { addItem, updateItemPrice, editItem } = useShoppingStore();
 
@@ -673,6 +676,52 @@ function AddItemSheet({
       updateItemPrice(itemId, 0, false);
     }
   };
+  const handleScan = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsAnalyzing(true);
+
+    try {
+      // 1. Convert to Base64
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const base64 = reader.result?.toString().split(",")[1];
+        if (!base64) return;
+
+        // 2. Send to API
+        const res = await fetch("/api/analyze-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: base64 }),
+        });
+
+        const data = await res.json();
+
+        if (data.name) {
+          setName(data.name);
+        }
+        if (data.price !== undefined && data.price > 0) {
+          setPrice(data.price.toString());
+        }
+        if (data.unit) {
+          setUnit(data.unit);
+        }
+
+        setIsAnalyzing(false);
+      };
+    } catch (error) {
+      console.error("Error analyzing product:", error);
+      setIsAnalyzing(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 backdrop-blur-sm">
@@ -697,6 +746,43 @@ function AddItemSheet({
         <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6">
           {itemToEdit ? "Editar Item" : "Adicionar Item"}
         </h2>
+
+        <div className="mb-6">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={onFileChange}
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={handleScan}
+            disabled={isAnalyzing}
+            className={cn(
+              "w-full py-4 rounded-2xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-2 transition-all",
+              isAnalyzing ? "bg-[var(--bg-secondary)]" : "bg-[var(--bg-primary)] hover:border-[var(--accent-primary)] hover:bg-[var(--bg-card)]"
+            )}
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-primary)]" />
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Identificando produto...</span>
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-full bg-[var(--accent-primary)]/10 flex items-center justify-center text-[var(--accent-primary)]">
+                  <Camera className="w-6 h-6" />
+                </div>
+                <div className="text-center">
+                  <span className="block font-bold text-[var(--text-primary)]">Escanear Produto</span>
+                  <span className="block text-[10px] text-[var(--text-muted)]">Tire uma foto para identificar nome e preço</span>
+                </div>
+              </>
+            )}
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
