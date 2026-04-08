@@ -493,7 +493,7 @@ function ItemCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -100 }}
       className={cn(
-        "bg-[var(--bg-card)] p-4 rounded-2xl shadow-[var(--shadow)] border border-[var(--border)] flex items-center gap-4 transition-all relative",
+        "bg-[var(--bg-card)] p-3 rounded-xl shadow-[var(--shadow)] border border-[var(--border)] flex items-center gap-3 transition-all relative",
         item.checked && "opacity-60",
       )}
     >
@@ -511,7 +511,7 @@ function ItemCard({
           onToggle();
         }}
         className={cn(
-          "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
+          "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0",
           item.checked
             ? "bg-[var(--accent-green)] border-[var(--accent-green)]"
             : "border-[var(--text-muted)]",
@@ -523,7 +523,7 @@ function ItemCard({
             animate={{ scale: 1 }}
             viewBox="0 0 24 24"
             fill="none"
-            className="w-4 h-4 text-white"
+            className="w-3 h-3 text-white"
           >
             <path
               d="M5 13l4 4L19 7"
@@ -542,22 +542,22 @@ function ItemCard({
       >
         <h3
           className={cn(
-            "font-semibold text-[var(--text-primary)] truncate transition-all",
+            "font-semibold text-sm text-[var(--text-primary)] truncate transition-all",
             item.checked && "line-through text-[var(--text-muted)]",
           )}
         >
           {item.name}
         </h3>
-        <p className="text-sm text-[var(--text-secondary)]">
+        <p className="text-[11px] text-[var(--text-secondary)]">
           {item.quantity} {item.unit}
         </p>
       </div>
 
       <div className="text-right shrink-0">
         {item.estimated_price === undefined ? (
-          <Loader2 className="w-4 h-4 animate-spin text-[var(--text-muted)] mx-auto" />
+          <Loader2 className="w-3 h-3 animate-spin text-[var(--text-muted)] mx-auto" />
         ) : (
-          <p className="font-semibold text-[var(--text-primary)]">
+          <p className="font-semibold text-sm text-[var(--text-primary)]">
             R$ {(item.estimated_price * (parseFloat(item.quantity) || 1)).toFixed(2)}
           </p>
         )}
