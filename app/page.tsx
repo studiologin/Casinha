@@ -80,9 +80,14 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      <div className="flex-1 overflow-y-auto w-full p-6 safe-pt">
+      <div className="flex-1 overflow-y-auto w-full p-6 safe-pt relative content-bottom-padding">
+        <div className="absolute top-4 right-6">
+          <span className="text-[10px] font-bold text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 px-2 py-0.5 rounded-full">
+            v2.0.1
+          </span>
+        </div>
 
-        <section className="relative h-48 mt-10 mb-10 flex items-end justify-center">
+        <section className="relative h-48 mt-12 mb-10 flex items-end justify-center">
           <div className="absolute inset-0 bg-[var(--bg-secondary)] rounded-3xl -z-10 overflow-hidden">
             {/* Background decoration */}
             <div

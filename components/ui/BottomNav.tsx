@@ -20,8 +20,8 @@ export function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 glass safe-pb">
-      <nav className="flex items-center justify-around px-6 py-3 overflow-x-auto no-scrollbar">
+    <div className="fixed bottom-0 left-0 right-0 z-50 glass safe-pb pb-[calc(var(--safe-bottom)+4px)]">
+      <nav className="flex items-center justify-around px-6 py-3 overflow-x-auto no-scrollbar max-w-2xl mx-auto">
         {navItems.map((item) => {
           // Special logic for Lista and Historico
           let isActive = false;

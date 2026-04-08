@@ -86,6 +86,7 @@ function ListaContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [editingItem, setEditingItem] = useState<ShoppingItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<ShoppingItem | null>(null);
+  const [listToDelete, setListToDelete] = useState<any | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isStoreLoading, setIsStoreLoading] = useState(false);
 
@@ -131,7 +132,7 @@ function ListaContent() {
     }
   };
 
-  const confirmDelete = async () => {
+  const confirmDeleteItem = async () => {
     if (!itemToDelete) return;
 
     setIsDeleting(true);
@@ -144,8 +145,21 @@ function ListaContent() {
     }, 800);
   };
 
+  const confirmDeleteList = async () => {
+    if (!listToDelete) return;
+
+    setIsDeleting(true);
+    await deleteSavedList(listToDelete.id);
+
+    // Sucesso rápido: 0.8s
+    setTimeout(() => {
+      setListToDelete(null);
+      setIsDeleting(false);
+    }, 800);
+  };
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden relative pb-16">
+    <div className="flex-1 flex flex-col overflow-hidden relative content-bottom-padding">
       <header className="px-6 py-4 flex justify-between items-center z-40 glass shrink-0">
         <Link href="/" className="flex items-center gap-2">
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">
@@ -199,7 +213,7 @@ function ListaContent() {
             {activeTab === "historico" ? (
               <HistoryView 
                 lists={savedLists} 
-                onDelete={deleteSavedList} 
+                onDelete={(list) => setListToDelete(list)} 
                 fetchItems={fetchSavedListItems}
                 onReuse={(item) => {
                   reuseItem(item, "mercado"); // Default to mercado for now, can be improved
@@ -345,7 +359,7 @@ function ListaContent() {
                       Cancelar
                     </button>
                     <button
-                      onClick={confirmDelete}
+                      onClick={confirmDeleteItem}
                       className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold"
                     >
                       Excluir
@@ -362,6 +376,68 @@ function ListaContent() {
                   </h2>
                   <p className="text-[var(--text-secondary)] mb-4">
                     Atualizando a lista em 3 segundos...
+                  </p>
+                  <div className="w-full h-1 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-[var(--accent-green)]"
+                      initial={{ width: "100%" }}
+                      animate={{ width: 0 }}
+                      transition={{ duration: 0.8, ease: "linear" }}
+                    />
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete List Confirmation Modal */}
+      <AnimatePresence>
+        {listToDelete && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[var(--bg-card)] max-w-sm w-full rounded-3xl p-6 shadow-2xl border border-[var(--border)] text-center"
+            >
+              {!isDeleting ? (
+                <>
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <Trash2 className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+                    Excluir histórico?
+                  </h2>
+                  <p className="text-[var(--text-secondary)] mb-6 text-sm">
+                    Tem certeza que deseja remover a lista "<strong>{listToDelete.name}</strong>" permanentemente?
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setListToDelete(null)}
+                      className="flex-1 py-3 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] font-medium"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={confirmDeleteList}
+                      className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 bg-[var(--accent-green)]/20 rounded-full flex items-center justify-center mx-auto mb-4 text-[var(--accent-green)]">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                  <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+                    Histórico removido!
+                  </h2>
+                  <p className="text-[var(--text-secondary)] mb-4 text-sm">
+                    Limpando os dados...
                   </p>
                   <div className="w-full h-1 bg-[var(--bg-secondary)] rounded-full overflow-hidden">
                     <motion.div
@@ -613,8 +689,9 @@ function AddItemSheet({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="w-full max-w-md bg-[var(--bg-card)] rounded-t-3xl p-6 pb-12 shadow-2xl relative z-10"
+        className="w-full max-w-md bg-[var(--bg-card)] rounded-t-3xl p-6 pb-16 shadow-2xl relative z-10"
       >
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-[var(--border)]/50 rounded-full sm:hidden" />
         <div className="w-12 h-1.5 bg-[var(--border)] rounded-full mx-auto mb-6" />
 
         <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6">
@@ -842,7 +919,7 @@ function HistoryView({
   fetchItems
 }: {
   lists: any[];
-  onDelete: (id: string) => void;
+  onDelete: (list: any) => void;
   onReuse: (item: any) => void;
   fetchItems: (id: string) => Promise<any[]>;
 }) {
@@ -858,7 +935,7 @@ function HistoryView({
           <HistoryCard 
             key={list.id} 
             list={list} 
-            onDelete={() => onDelete(list.id)} 
+            onDelete={() => onDelete(list)} 
             onReuse={onReuse}
             fetchItems={() => fetchItems(list.id)}
           />
@@ -916,7 +993,7 @@ function HistoryCard({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <button 
             onClick={(e) => {
               e.stopPropagation();

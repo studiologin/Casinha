@@ -55,7 +55,7 @@ export default function RootLayout({
         className="antialiased bg-[var(--bg-primary)] text-[var(--text-primary)] h-screen overflow-hidden flex flex-col"
         suppressHydrationWarning
       >
-        <main className="flex-1 overflow-hidden flex flex-col items-center">
+        <main className="flex-1 overflow-hidden flex flex-col items-center relative h-full">
           <div className="w-full max-w-2xl flex-1 flex flex-col overflow-hidden relative">
             {children}
           </div>
